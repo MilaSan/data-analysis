@@ -1,2 +1,2 @@
-# datanalysis
-Intro to R
+# data-analysis
+A project in R
