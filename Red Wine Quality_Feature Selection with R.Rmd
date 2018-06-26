@@ -1,30 +1,13 @@
 ---
 output:
-  html_document: default
   pdf_document: default
+  html_document: default
 ---
+
 RED WINE QUALITY - FEATURE SELECTION FROM DATASET WITH R
 ========================================================
 by Camila Santo
 ========================================================
-
-
-```{r echo=FALSE, message=FALSE, warning=FALSE, packages}
-
-library(ggplot2)
-library(RColorBrewer)
-library(swirl)
-library(tidyr)
-library(dplyr)
-library(ggthemes)
-library(gridExtra)
-library(cluster)
-
-mydata <- read.csv("wineQualityReds.csv")
-data(mydata)
-str(mydata)
-
-```
 
 > This dataset with 1599 observations was publicly made available for research through the publication In Modeling wine preferences by data mining from physicochemical properties. In Decision Support Systems, Elsevier, 47(4):547-553. ISSN: 0167-9236. [Cortez et al., 2009]. 
 > It is a reference from two datasets, one using red and another white wine samples. The inputs included in both studies objective tests (e.g. PH values) and the output was based on sensory data (median of at least 3 evaluations made by wine experts). Each expert graded the wine quality from an option of 11 output attributes between 0 (very bad) and 10 (very excellent) based on an input of other 11 variables described below. The Number of Instances of red wine were 1599.
@@ -54,22 +37,31 @@ str(mydata)
 > Due to privacy and logistic issues, only physicochemical (inputs) and sensory (the output) variables are available (e.g. there is no data about grape types, wine brand, wine selling price, etc.).
 > It was recommended to me that I viewed the dataset from classification or regression tasks, but highlighted that the classes were ordered and not balanced (there are munch more normal wines than excellent or poor ones according to instructions). Outlier detection algorithms were then recommended to detect the few excellent or poor wines. Even if all input variables were not considered surely relevant. For example, several of the attributes could be correlated to apply some sort of feature selection. So, finally, it is expected that I will test feature selection methods in this analysis.
 
-> **Preliminary observations of the Dataset information**: While the input testing was focused on objective chemical attributes, such as the PH and Chloride, some of these attributes seem to have been a focus on the research, such as quantity of free and total Sulfur Dioxide apparently chemically correlated with the Sulphates, increasing taste and preventing oxidation and microbial growth. Some other input attributes such as volatile and citric acidity, seem to be possibly correlated with the sensory output of the 3 experts evaluations, because they're described subjectively. The tastes described by the attributes are vinegar, fresh and sweet, but the level of SO2 seems to increase the tasting experience. Finally, it looks like most red wines in general present attributes such as a 1-45g range of residual sugar and a PH ranging 3-4.
-> The privacy and logistic limitations of the study prevents this analysis to look after any considerations that could be related with market characteristics, production or branding effects in the quality evaluation. Even if we can find more data in another dataset associating the white and red wines, that would be a subject for other types of inquiries. The fact that only 3 experts were engaged in the evaluation process and not much information is provided about this specific choice represents another limitation for the usability of the analysis. As the taste of consumers of a certain market, for example, might react differently to the chemical properties of some red wines than experts who are used to compare different options. 
-> The instructions for the analysis suggest to start from ordered regression tasks, classifying the standards and outliers by characteristics and confirming which inputs were irrelevant. The dataset was shared probably with the intent to expand research in feature selection attributes. So, these guidelines will be the start of this data analysis.
+```{r echo=FALSE, message=FALSE, warning=FALSE, packages}
 
-> For more details about the study, please consult: http://www.vinhoverde.pt/en/
+# Install packages for the analysis and load data
+
+library(ggplot2)
+library(RColorBrewer)
+library(swirl)
+library(tidyr)
+library(dplyr)
+library(ggthemes)
+library(gridExtra)
+library(cluster)
+
+mydata <- read.csv("wineQualityReds.csv")
+data(mydata)
+str(mydata)
+
+```
 
 
-# Univariate Plots
+# Univariate Analysis
 
-> **The structure of the quality evaluations**: The quality evaluations output is the first thing our analysis needs to get a panorama from. Our first visualization is a histogram of this int attribute showing that the evaluations ranged from 3 to 8, which simply means that no red wine was considered very bad or very excellent.
+> **Finding the density of the standards**: Most of the evaluations were considered average with a mean of 5.636. This panorama doesn't suggest outliers, but it's a good start to define densities that might support a ranking, setting the least pleasant red wine options with evaluations ranging from 3-4 and the best between 7-8, in which 3 and 8 represent the extremes.
 
-```{r echo=FALSE, warning=FALSE, Univariate_Plots}
-
-ggplot(aes(x = quality), data = mydata) + geom_histogram(binwidth = 0.5) + scale_x_continuous(breaks = 0:10)
-
-summary(mydata$quality)
+```{r echo=FALSE, warning=FALSE, Univariate_Plots_b}
 
 par(mfrow = c(3, 3))
 colnames <- dimnames(mydata)[[2]]
@@ -77,51 +69,51 @@ for (i in 2:12) {d <- density(mydata[,i])
     plot(d, type = "n", main = colnames[i])
     polygon(d, col = "gray", border = "gray")}
 
-
-ggplot(mydata, aes(x = quality, y = alcohol)) + geom_point(shape = 1)
-
-
-by(mydata$quality, mydata$alcohol, summary)
-
 ```
 
-# Univariate Analysis
-
-> **Finding the density of the standards**: Most of the evaluations were considered average with a mean of 5.636. This panorama doesn't suggest outliers, but it's a good start to define densities that might support a ranking, setting the least pleasant red wine options with evaluations ranging from 3-4 and the best between 7-8, in which 3 and 8 represent the extremes.
 
 > **One feature influencing the quality evaluations**: 
 
 > To overcome the limitation of standards on the outputt the density of the input attributes sepretty concentrated in general, most of the times with clear peaks, supporting the information from the instructions that the red wines respected some standards. Notwithstanding, variables such as fixed and volatile acidity, citric acid, free and total sulfur dioxide and alcohol seem to show different shapes of density, suggesting that eventually some relation with quality might be situated in some of these attributes, or in their correlations. For now, I want to focus on the most standardized of these attributes, which is the acohol percentage. Since the other features, were already mentioned in the instructions as influencing sensoriality and being more chemically related.A relationship between alcohol and quality evaluation becomes evident in our plot, and it looks like the closer from the average maximum percentage of alcohol of 14% the red wine was, the betters it was ranked.On the other hand, the worst rating are related wth lower percentages of alcohol levels. Even if most values are within the range of 10-14%.
 
+```{r echo=FALSE, warning=FALSE, Univariate_Plots_c}
+
+ggplot(mydata, aes(x = factor(quality), y = alcohol)) + geom_jitter(alpha = 1/10) + geom_boxplot(alpha = 1/10, color = 'blue') + stat_summary (fun.y = 'mean', geom = 'point', color = 'red') + labs(x ='Quality Scores (1-10)', y = 'alcohol (% by volume)', title = 'Boxplot of Alcohol levels across quality scores')
+
+```
+
+
 > In order to verify that hipothesis, the dataset summarized according to the alcohol levels. Which made possible to identify the values of few outliers. For example, no wine above 14% of alcohol has received high evaluation scores. Also analyzing the means of scores per alcohol levels we noticed they decrease almost proportionally to the alcohol levels until the value of 9.5% when most of the outliers for low quality red wines with low alcohol levels are located. On the other hand, no regular growth in the scores is noticed from 12.5% alcohol levels. Which make us conclude that a 12.5-13% of alcohol level would be the safest selection feature for a standard red wine. The highest between that range and 14% would bbe the safest bet for a good wine. And the lowest between 9.5-10% the most probable low quality wine.
 
-> No new variable was created because the visualizations were sufficient to stimulate further investigation.
+```{r echo=FALSE, warning=FALSE, Univariate_Plots_d}
 
+by(mydata$quality, mydata$alcohol, summary)
+
+```
+
+> No new variable was created because the visualizations were sufficient to stimulate further investigation.
 
 # Bivariate Plots
 
 > **Looking for other features that might have influenced the quality evaluation**: After all, alcohol levels were not mentioned to be a relevant input, but seem to represent a factor at least influencing the highest ratings of sensory output. Based on the discoveries in the univariate plots, supported by the instructions for the analysis,  relationships between quality and citric acid might be interesting to look at, because it seems to be considered a tasting feature of "freshness", apparently a sign of red wine quality. The volatile acidity, on the other hand seem to be presented as an important factor for a red wine to be considered bad. These 2 types of variables allow to start looking for chemical factors that might also be associated with quality, even if their objetiveness might seem subjective, perhaps pointing reasons behind feature selection attributes.
 This way not limiting the relationships between the main output of quality with supporting variables. But looking at potential relationships between supporting variables as well, this analysis might identify differences between the objective interaction between some variables and the subjective output that their relationships might engage.
 
+```{r echo=FALSE, warning=FALSE, Bivariate_Plots_a}
+
+ggplot(mydata, aes(x = factor(quality), y = citric.acid)) + geom_jitter(alpha = 1/10) + geom_boxplot(alpha = 1/10, color = 'blue') + stat_summary (fun.y = 'mean', geom = 'point', color = 'red') + labs(x ='Quality Scores (1-10)', y = 'Citric Acid (g/dm^3)', title = 'Boxplot of Quality Scores to Citric Acid')
+
+ggplot(mydata, aes(x = factor(quality), y = volatile.acidity)) + geom_jitter(alpha = 1/10) + geom_boxplot(alpha = 1/10, color = 'blue') + stat_summary (fun.y = 'mean', geom = 'point', color = 'red') + labs(x ='Quality Scores (1-10)', y = 'Volatile Acidity (g/dm^3)', title = 'Boxplot of Quality Scores to Volatile Acidity')
+
+```
+
+
 > The sulphates seem to be linked with the prevention of oxidation and microbial growth, that at the end is considered to be correlated with quality. But many features seem to correlate chemically in this matter, such as free and total sulfur dioxide. Other 2 variables the analysis must investigate to understand better what chemical features a good quality red wine must have, before we can dive into the influence of the sulphates feature for the selection of red wines.
 
-```{r echo=FALSE, warning=FALSE, Bivariate_Plots}
+```{r echo=FALSE, warning=FALSE, Bivariate_Plots_b}
 
-ggplot(aes(x = quality, y = citric.acid), data = mydata) + geom_point()
+ggplot(mydata, aes(x = factor(quality), y = free.sulfur.dioxide)) + geom_jitter(alpha = 1/10) + geom_boxplot(alpha = 1/10, color = 'blue') + stat_summary (fun.y = 'mean', geom = 'point', color = 'red') + labs(x ='Quality Scores (1-10)', y = 'Free Sulfur Dioxide (g/dm^3)', title = 'Boxplot of Quality Scores to Free Sulfur Dioxide')
 
-ggplot(mydata, aes(x = quality, y = volatile.acidity)) + geom_point(shape = 1)
-
-ggplot(mydata, aes(x = citric.acid, y = volatile.acidity)) + geom_boxplot()
-
-with(mydata, cor.test(citric.acid, volatile.acidity, method = "pearson"))
-
-ggplot(aes(x = quality, y = free.sulfur.dioxide), data = mydata) + geom_point()
-
-ggplot(mydata, aes(x = quality, y = total.sulfur.dioxide)) + geom_point(shape = 1)
-
-ggplot(mydata, aes(x = free.sulfur.dioxide, y = total.sulfur.dioxide)) + geom_boxplot()
-
-with(mydata, cor.test(free.sulfur.dioxide, total.sulfur.dioxide, method = "pearson"))
+ggplot(mydata, aes(x = factor(quality), y = total.sulfur.dioxide)) + geom_jitter(alpha = 1/10) + geom_boxplot(alpha = 1/10, color = 'blue') + stat_summary (fun.y = 'mean', geom = 'point', color = 'red') + labs(x ='Quality Scores (1-10)', y = 'Total Sulfur Dioxide (g/dm^3)', title = 'Boxplot of Quality Scores to Total Sulfur Dioxide')
 
 ```
 
@@ -130,52 +122,97 @@ with(mydata, cor.test(free.sulfur.dioxide, total.sulfur.dioxide, method = "pears
 > **Tastefulness of Red Wine**: Citric acid and volatile acidity seem to have opposite effects in the red wine tasting experience, because they present opposite shapes of linear regression, with the first one showing a moderate positive regression (the higher the quantity of citric acid represents a higher probability of a good evaluation) and the second one a moderate negative regression (the higher the amount of volatile acidity represents a higher probability of a good evaluation). Most evaluations were standard when we compared these attributes. But for the purpose of setting a feature selection, the quantity of citric acid above 0.1g/dm^3 and bellow 1.25g/dm^3 matching a range of volatile acidity between 0.4g/dm^3 and bellow 0.65g/dm^3 would be a good match.
 > This was the strongest relationship found, because both attributes seem to have opposite impacts in the evaluation of red wine quality, the first one impacting positively as the amount grows over 0.5g/dm^3 and the other one impacting negatively as soon as the amount becomes higher than 0.4g/dm^3. We can conclude that one point the red wines evaluated are missing to develop more quality perception is keeping the quantity of volative acidity to the minimum as possible. It is important to highlight that this conclusion doesn't mean that these factors directly impact on the quality of the red wines, but on the evaluation of the wine, which may be subjective to other factors, as we concluded before, such as the percentage of alcohol. This observation opens an inquiry about how objective these evalutations are. Perhaps further studies about the digestion of red wine could elucidate this inquiry with new insights. If we remember that for driving purposes, the quantity of alcohol in the blood might change our driving reflexes, we can also argue about the impact of  the percentage of alcohol in the evaluation of other sensory stimulus. Nevertheless, there is no information in this dataset to investigate this deeper.
 
+```{r echo=FALSE, warning=FALSE, Bivariate_Plots_c}
+
+with(mydata, cor.test(citric.acid, volatile.acidity, method = "pearson"))
+
+
+with(mydata, cor.test(free.sulfur.dioxide, total.sulfur.dioxide, method = "pearson"))
+
+```
 > The Pearson correlation method analyzes relationships through a coefficient from 1 to -1. Both correlations here are situated withing that range. While the correlatio  between the citric acid and volatile acidity is of -0.55, the correlation of between free sulfur dioxide and total sulfur dioxide is of 0.67. What this means is that the relationship between volatile acidity mays impact negatively the citric acid. While the free sulfur dioxide may impact positively. The range of relationship for the free and total amount of sulfur dioxide is respectively of above 0.5mg/dm^3 to below 70mg/dm^3, and from above 25mg/dm^3 to below 75mg/dm^3. But let's remember that the instructions provided informed that the total amount of sulfur dioxide above 50mg/dm^3 is considered to improve the tasting experience. Unfortunately, our dont confirm that in matters of quality evaluation. Highest quality ratings for this attribute are below 50mg/dm^3, even if only the lowest range exclusively below that amount. Many of standard quality ratings reach even above that amount.
 
 
 # Multivariate Plots
 
+```{r echo=FALSE, warning=FALSE, Multivariate_Plots_a}
+
+# Variable class conversion to factor
+
+mydata$quality <- as.factor(mydata$quality)
+mydata$sulphates <- as.factor(mydata$sulphates)
+
+ggplot(data = mydata, aes(x = density, y = alcohol, color = factor(quality))) + coord_cartesian(xlim = c(0.985, 1.005), ylim = c(5, 15)) + geom_jitter() + scale_color_brewer(type = "seq") + theme_dark() + labs(x = 'Density (g/dm^3)', y = 'Alcohol levels (% by volume)', title = 'Relationship between Density and Alcohol per Quality levels')
+
+```
 
 > **Looking for objective attribute relationships**: The bivariate plots seem to have elucidated more about the sensory experience of red wine tasting than providing good insights to establish a ranking of feature selection. We have already identified a relation between the percentage of alcohol and the quality evaluation in the univariate section, but it seems from the last plots, that there are chemical relations that also impact on the subjectiveness of the ratings. This analysis remains in need of onfirming objective input relationships that outcome in highest or lowest quality evaluations. The sulphates seem to be linked with the prevention of oxidation and microbial growth, that at the end is considered to be correlated with quality. So it's time to try to understand that.
 
 
-```{r echo=FALSE, warning=FALSE, Multivariate_Plots}
+```{r echo=FALSE, warning=FALSE, Multivariate_Plots_b}
 
-ggplot(data = mydata, aes(x = quality, y = alcohol, color = sulphates)) + geom_point()
+ggplot(aes(x = citric.acid, y = volatile.acidity), data = mydata) + geom_jitter(aes(color = quality), alpha = 0.5) + geom_smooth(method = lm) + labs(x = 'Citric Acid (g/dm^3)', y = 'Volatile Acidity (g/dm^3)', title = 'Relationship between Citric Acid and Volatile Acidity per Quality levels')
 
-ggplot(data = mydata, aes(x = alcohol, y = sulphates, color = quality)) + geom_point()
-
-ggplot(aes(x = citric.acid, y = volatile.acidity), data = mydata) + geom_jitter(aes(color = quality), alpha = 0.5) + geom_smooth(method = lm)
-
-ggplot(aes(x = total.sulfur.dioxide, y = free.sulfur.dioxide), data = mydata) + geom_jitter(aes(color = quality), alpha = 0.5) + geom_smooth(method = lm)
-
-# Variable class conversion to factor
-mydata$quality <- as.factor(mydata$quality)
-mydata$sulphates <- as.factor(mydata$sulphates)
-
-ggplot(mydata, aes(x = citric.acid, y = alcohol, fill = quality)) + geom_boxplot()
-
-ggplot(mydata, aes(x = volatile.acidity, y = alcohol, fill = quality)) + geom_boxplot()
-
-ggplot(mydata, aes(x = total.sulfur.dioxide, y = citric.acid, fill = quality)) + geom_boxplot()
-
-ggplot(mydata, aes(x = total.sulfur.dioxide, y = volatile.acidity, fill = quality)) + geom_boxplot()
-
-ggplot(mydata, aes(x = total.sulfur.dioxide, y = alcohol, fill = quality)) + geom_boxplot()
-
-ggplot(aes(x = sulphates, y = citric.acid), data = mydata) + geom_jitter(aes(color = quality, size = alcohol), alpha = 0.25) + geom_smooth(method = lm) + xlab("sulphates") + ylab("citric acid")
-
-ggplot(aes(x = citric.acid, y = volatile.acidity), data = mydata) + geom_jitter(aes(color = quality, size = alcohol), alpha = 0.25) + geom_smooth(method = lm) 
+ggplot(aes(x = total.sulfur.dioxide, y = free.sulfur.dioxide), data = mydata) + geom_jitter(aes(color = quality), alpha = 0.5) + geom_smooth(method = lm) + labs(x = 'Total Sulfur Dioxide (g/dm^3)', y = 'Free Sulfur Dioxide (g/dm^3)', title = 'Relationship between Total and Free Sulfur Dioxide per Quality levels')
 
 ```
 
 # Multivariate Analysis
 
-> If we try to look at the multivariate relationship between sulphates, quality and alcohol from multiple angles, we end up finding a more evident relation when we visualize quality according to the percentage of alcohol within layers of quantity of sulphates. Clearly, lowest quality ratings below 5 are in majority for red wines with less than 12% alcohol and less than 0.57g/dm^3 of sulphates. While the highest quality ratings above 6 are in majority for red wines within the range of 10-14% alcohol and within the range of 0.79-1.2g/dm^3 of sulphates. Even if a strong correlation doesn't seem evident (the linear regression seems pretty positively weak), it provides enough insight for this analysis to dive in this inquiry. We can finally come to an end with the inquiry about the impact of sulphates
+> If we try to look at the multivariate relationship between sulphates, quality and alcohol from multiple angles, we end up finding a more evident relation when we visualize quality according to the percentage of alcohol within layers of quantity of sulphates. Clearly, lowest quality ratings below 5 are in majority for red wines with less than 12% alcohol and less than 0.57g/dm^3 of sulphates. While the highest quality ratings above 6 are in majority for red wines within the range of 10-14% alcohol and within the range of 0.79-1.2g/dm^3 of sulphates. Even if a strong correlation doesn't seem evident (the linear regression seems pretty positively weak), it provides enough insight for this analysis to dive in this inquiry. We can finally come to an end with the inquiry about the impact of sulphates.
+
+```{r echo=FALSE, warning=FALSE, Multivariate_Plots_c}
+
+ggplot(data = mydata, aes(x = density, y = alcohol, color = sulphates)) + geom_point() + labs(x = 'Density (g/dm^3)', y = 'Alcohol levels (% by volume)', title = 'Alcohol and Density per Sulphates')
+
+ggplot(data = mydata, aes(x = alcohol, y = quality, color = sulphates)) + geom_point() + labs(x = 'Density (g/dm^3)', y = 'Quality Scores (1-10)', title = 'Alcohol Quality per Sulphates')
+
+```
+
+
 > From the previous section, we understood correlations between citric acid and volatile acidity, but didn't complete crossing the relation with quality simultaneously. This more elaborated visualization confirms the previous ones and adds that the highest quality evaluations are situated where citric acid is of 0.5g/dm^3 and volatile acidity is at 0.4g/dm^3.
-> When it comes to the relation between free and total sulfur dioxide, the most quality ratings are present when free sulfur dioxide is below 20mg/dm^3, and total sulfur dioxide is below 50mg/dm^3. But the best conclusion we may risk is that these two attributes should be as low as possible (within the parameters previously visualized from the previous plots) for the quality rating to increase.
+
+```{r echo=FALSE, warning=FALSE, Multivariate_Plots_d}
+
+ggplot(mydata, aes(x = citric.acid, y = volatile.acidity)) + geom_boxplot() + geom_jitter(aes(color = quality), alpha = 0.4) + geom_smooth(method = lm) + theme(plot.title = element_text(hjust = 0.5)) + xlab("Fresh taste") + ylab("Vinegar taste") + ggtitle("Tastefulness of red wine")
+
+```
+
+
+
+> When it comes to the relation between total sulfur dioxide, citric acid and alcohol, the most quality ratings are present when free sulfur dioxide is below 20mg/dm^3, and total sulfur dioxide is below 50mg/dm^3. But the best conclusion we may risk is that these two attributes should be as low as possible (within the parameters previously visualized from the previous plots) for the quality rating to increase.
+
+```{r echo=FALSE, warning=FALSE, Multivariate_Plots_e}
+
+ggplot(mydata, aes(x = total.sulfur.dioxide, y = citric.acid, fill = quality)) + geom_boxplot() + labs(x ='Total Sulfur Dioxide (g/dm^3)', y = 'Citric Acid (g/dm^3)', title = 'Boxplot of Total Sulfur Dioxide per Citric Acid across quality scores')
+
+ggplot(mydata, aes(x = total.sulfur.dioxide, y = volatile.acidity, fill = quality)) + geom_boxplot() + labs(x ='Total Sulfur Dioxide (g/dm^3)', y = 'Volatile Acidity (g/dm^3)', title = 'Boxplot of Total Sulfur Dioxide per Volatile Acidity across quality scores')
+
+ggplot(mydata, aes(x = total.sulfur.dioxide, y = alcohol, fill = quality)) + geom_boxplot() + labs(x ='Total Sulfur Dioxide (g/dm^3)', y = 'Alcohol (% by volume)', title = 'Boxplot of Total Sulfur Dioxide per Alcohol levels across quality scores')
+
+```
+
+
 > Few plots allow us to delimitate and confirm better the best ranges of citric acid and volatile acidity per an ideal range of alcohol percentage according to the quality levels. They suggest that the levels of citric acid might be ideal in lower amounts as we verified in different plots as the percentage of alcohol goes higher. And the same for the volatile acidity. Which seems to mean that a higher alcohol percentage decreases the tastefulness, whether of vinegar or fresh tastes.
-> The same plots allow us to cross check relationships between citric acid and volitile acidity per total of sulfur dioxide accodring to the quality levels better evaluated.Both confirm that while the ideal amount (best quality rated) of volatile acidity turns around 50g/dm^3, the standards overpass 100-200g/dm^3. 
+
+```{r echo=FALSE, warning=FALSE, Multivariate_Plots_f}
+
+ggplot(mydata, aes(x = alcohol, y = citric.acid, fill = quality)) + geom_boxplot() + labs(x ='Citric Acid (g/dm^3)', y = 'Alcohol (% by volume)', title = 'Boxplot of Citric Acid per Alcohol levels across quality scores')
+
+ggplot(mydata, aes(x = volatile.acidity, y = alcohol, fill = quality)) + geom_boxplot() + labs(x ='Volatile Acidity (g/dm^3)', y = 'Alcohol (% by volume)', title = 'Boxplot of Volatile Acidity per Alcohol levels across quality scores')
+
+```
+
+
+> The same plots allow us to cross check relationships between citric acid and volitile acidity per total of sulfur dioxide accodring to the quality levels confirm that while the ideal amount (best quality rated) of volatile acidity turns around 50g/dm^3, the standards overpass 100-200g/dm^3. 
+
+```{r echo=FALSE, warning=FALSE, Multivariate_Plots_g}
+
+ggplot(aes(x = citric.acid, y = volatile.acidity), data = mydata) + geom_jitter(aes(color = alcohol), alpha = 0.25) + geom_smooth(method = lm)  + labs(x = 'Total Sulfur Dioxide (g/dm^3)', y = 'Free Sulfur Dioxide (g/dm^3)', title = 'Relationship between Citric Acid and Volatile Acidity per Quality levels and Alcohol percentage')
+
+```
+
+
 > Finally, since the alcohol percentage seemed to affect tastefulness, while the instructions of the dataset present the total sulfur dioxide as an attribute that increases tastefulness, the plot that relates both features with quality ratings reveals that the ideal amount of alcohol, without affecting tastefulness would be of 11-13%, again for a volatile acidity turning around 50g/dm^3.
 > No model was created for this analysis, since it's a tidy dataset.
 
@@ -188,9 +225,10 @@ ggplot(aes(x = citric.acid, y = volatile.acidity), data = mydata) + geom_jitter(
 * The inputs that were not relevant for this specific analysis were the fixed acidity, residual sugar, chloride, and density. The relevance of the sulphates was minimal and only if correlated with several other attributes. Ph and free sulfur dioxide, relvealed not to be relevant factors for this analysis conclusions.
 
 ### Plot One
+
 ```{r echo=FALSE, warning=FALSE, Plot_One}
 
-ggplot(data = subset(mydata),aes(x = quality, y = alcohol)) + geom_point() + geom_jitter() + theme(plot.title = element_text(hjust = 0.5)) + xlab("Quality ratings 1-10") + ylab("Alcohol percentage (% by volume)") + ggtitle("Quality levels of red wine per Alcohol percentage")
+ggplot(mydata, aes(x = factor(quality), y = alcohol)) + geom_jitter(alpha = 1/10) + geom_boxplot(alpha = 1/10, color = 'blue') + stat_summary (fun.y = 'mean', geom = 'point', color = 'red') + labs(x ='Quality scores', y = 'Alcohol (% by volume)', title = 'Boxplot of alcohol levels across quality scores')
 
 ```
 
@@ -198,6 +236,7 @@ ggplot(data = subset(mydata),aes(x = quality, y = alcohol)) + geom_point() + geo
 > The percentage of alcohol seem to influence the sensory output, in a way that affect the tastefulness. While quality ratings where higher as percentages were higher, it is recommended for amateur customers to option for average percentages within the range of 10-14%, ideally around 12%.
 
 ### Plot Two
+
 ```{r echo=FALSE, warning=FALSE, Plot_Two}
 
 ggplot(mydata, aes(x = citric.acid, y = volatile.acidity)) + geom_boxplot() + geom_jitter(aes(color = quality), alpha = 0.4) + geom_smooth(method = lm) + theme(plot.title = element_text(hjust = 0.5)) + xlab("Fresh taste") + ylab("Vinegar taste") + ggtitle("Tastefulness of red wine")
@@ -208,6 +247,7 @@ ggplot(mydata, aes(x = citric.acid, y = volatile.acidity)) + geom_boxplot() + ge
 > The experience of drinking good quality red wine seem to be within a good proportion of freshness and vinegar tastes, and all the plots confirmed these amounts to be as low as possible for the vinegar taste and as average as posssible for the fresh taste.
 
 ### Plot Three
+
 ```{r echo=FALSE, warning=FALSE, Plot_Three}
 
 ggplot(aes(x = citric.acid, y = volatile.acidity), data = mydata) + geom_jitter(aes(color = quality, size = alcohol), alpha = 0.4) + geom_smooth(method = lm) + ggtitle(" Comparing tastefulness by quality & alcohol") + theme(plot.title = element_text(hjust = 0.5)) + xlab("citric acid (g/dm3)") + ylab("volatile acidity (g/dm^3)")
@@ -236,3 +276,4 @@ Total sulfur dioxide - 25-75mg/dm^3 (Ideal: above 50mg/dm^3)
 > https://s3.amazonaws.com/udacity-hosted-downloads/ud651/correlation_images.jpeg
 > http://blogs.acu.edu/jee99a/courses/quantitative-reasoning/linear-regression/
 > https://www.rstudio.com/resources/webinars/rstudio-essentials-webinar-series-managing-part-2/
+
